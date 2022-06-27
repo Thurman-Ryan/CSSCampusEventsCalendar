@@ -1,0 +1,63 @@
+function main(workbook: ExcelScript.Workbook): TableData[] {
+    // Get the first table in the "WithHyperLink" worksheet.
+    // If you know the table name, use `workbook.getTable('TableName')` instead.
+    const table = workbook.getWorksheet('Summary').getTables()[0];
+
+    // Get all the values from the table as text.
+    const range = table.getRange();
+
+    // Create an array of JSON objects that match the row structure.
+    let returnObjects: TableData[] = [];
+    if (table.getRowCount() > 0) {
+        returnObjects = returnObjectFromValues(range);
+    }
+
+    // Log the information and return it for a Power Automate flow.
+  returnObjects.forEach((element) => {
+    /*let dtVal=element["Date of Event"];
+    let dt=new Date(Date.parse(dtVal));
+    let dtmil= new Date(dt.setUTCHours(12));
+    element["Date of Event"]=dtmil;*/
+    element["Requestor"]=((element["Requestor"]).replace(' ','.'))+"@tccd.edu";
+
+  });
+    console.log(JSON.stringify(returnObjects));
+    return returnObjects
+}
+
+function returnObjectFromValues(range: ExcelScript.Range): TableData[] {
+    let values = range.getTexts();
+    let objectArray: TableData[] = [];
+    let objectKeys: string[] = [];
+    for (let i = 0; i < values.length; i++) {
+        if (i === 0) {
+            objectKeys = values[i]
+            continue;
+        }
+        let object = {}
+        for (let j = 0; j < values[i].length; j++) {
+            // For the 2nd column (0 index), extract the hyperlink and use that instead of text. 
+            if (j === 0) {
+                /*object[objectKeys[j]] = range.getCell(i, j).getHyperlink().address;*/
+              object[objectKeys[j]] = values[i][j];
+            } else {
+                object[objectKeys[j]] = values[i][j];
+            }
+        }
+
+        objectArray.push(object as TableData);
+    }
+    return objectArray;
+}
+
+interface TableData {
+    "ID": string
+    "Title": string
+    "Requestor": string
+    "Acct/Dept": string
+    "Location Of Event": string
+    "Prim Resp": string
+    "Event Start Time": string
+    "Event End Time": string
+    "Description": string
+    }
